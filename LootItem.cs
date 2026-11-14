@@ -1,0 +1,1 @@
+public record LootItem(ItemType item, int TileX, int TileY);

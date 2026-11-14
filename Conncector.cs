@@ -1,0 +1,1 @@
+public readonly record struct Connector(int X, int Y, Direction Direction);

@@ -1,0 +1,1 @@
+public readonly record struct ItemDefinition(ItemType Type, string Name, ItemCategory Category, int MaxStack, float MinDepth, float Weight);
