@@ -1,24 +1,6 @@
 public static class LootPlacer
 {
     private const double SpotChance = 0.75;
-    // public static void Place(Facility facility, Random rng)
-    // {
-    //     for (int i = 1; i < facility.Rooms.Count; i++)
-    //     {
-    //         PlacedRoom room = facility.Rooms[i];
-    //         if(room.Template.Name.StartsWith("corridor")) continue;
-
-    //         Room bounds = room.Bounds;
-    //         float roomDepth = facility.Depth.GetDepthOne(bounds.CenterX, bounds.CenterY);
-    //         if(roomDepth < 0) continue;
-
-    //         int count = 1 + rng.Next(0, 1 + (int)(roomDepth * 2));
-    //         for (int n = 0; n < count; n++)
-    //         {
-    //             TryPlaceOne(facility, bounds, rng);
-    //         }
-    //     }
-    // }
 
     public static void Place(Facility facility, Random rng)
     {
@@ -30,20 +12,30 @@ public static class LootPlacer
                 if(rng.NextDouble() > SpotChance) continue;
                 float depth = facility.Depth.GetDepthOne(spot.X, spot.Y);
                 if(depth < 0) continue;
-
-                WorldContainer? container = CreateContainer(spot, facility.Rooms[i], depth, rng);
-                if(container != null) facility.Containers.Add(container);
+                if(spot.Kind == LootSpotKind.Loose)
+                {
+                    ItemType? type = LootTable.Roll(depth, rng);
+                    if(type != null)
+                    {
+                        int amount = rng.Next(1, 4);
+                        LootItem item = new(type.Value, amount, spot.X, spot.Y);
+                        facility.Loot.Add(item);
+                    }
+                    
+                }
+                else
+                {
+                    WorldContainer? container = CreateContainer(spot, depth, rng);
+                    if(container != null) facility.Containers.Add(container);
+                }
             }
         }
     }
 
-    private static WorldContainer? CreateContainer(LootSpot spot, PlacedRoom room, float depth, Random rng)
+    private static WorldContainer? CreateContainer(LootSpot spot, float depth, Random rng)
     {
-        bool isCrate = spot.Kind == LootSpotKind.Container;
-        Container contents = isCrate ? new(8) : new(WorldContainer.PileSlots);
-        int count = isCrate 
-            ? 1 + rng.Next(0, 2 + (int)(depth * 3)) //Crate
-            : rng.Next(1, 3); //Pile
+        Container contents = new(8);
+        int count = 1 + rng.Next(0, 2 + (int)(depth * 3));
         
         for(int n = 0; n < count; n++)
         {
@@ -54,29 +46,9 @@ public static class LootPlacer
                 ? rng.Next(1, 4)
                 : 1;
             
-            contents.Add(type.Value, amount);
+            contents.Add(type.Value, amount, spot.X, spot.Y);
         }
         if(contents.IsEmpty) return null;
-
-        var kind = isCrate ? WorldContainerKind.Crate : WorldContainerKind.Pile;
-        return new(spot.X, spot.Y, kind, contents);
-    }
-
-    private static void TryPlaceOne(Facility facility, Room bounds, Random rng)
-    {
-        const int maxTries = 20;
-        for(int attempt = 0; attempt < maxTries; attempt++)
-        {
-            int x = rng.Next(bounds.X + 1, bounds.X + bounds.Width - 1);
-            int y = rng.Next(bounds.Y + 1, bounds.Y + bounds.Height - 1);
-
-            if(facility.Map.IsWall(x, y)) continue;
-            if(facility.Loot.Any(l => l.TileX == x && l.TileY == y)) continue;
-
-            float tileDepth = facility.Depth.GetDepthOne(x, y);
-            ItemType? item = LootTable.Roll(tileDepth, rng);
-            if(item != null) facility.Loot.Add(new LootItem(item.Value, x, y));
-            return;
-        }
+        return new(spot.X, spot.Y, WorldContainerKind.Crate, contents);
     }
 }

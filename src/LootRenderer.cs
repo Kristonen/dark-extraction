@@ -9,15 +9,7 @@ public static class LootRenderer
         {
             int cx = (int)((c.TileX + 0.5f) * TileMap.TileSize);
             int cy = (int)((c.TileY + 0.5f) * TileMap.TileSize);
-
-            if(c.Kind == WorldContainerKind.Pile)
-            {
-                DrawPile(c, cx, cy);
-            }
-            else
-            {
-                DrawCrate(c, cx, cy);
-            }
+            DrawCrate(c, cx, cy);
         }
     }
 
@@ -28,18 +20,24 @@ public static class LootRenderer
         RL.DrawRectangle(cx - 10, cy - 10, 20, 20, fill);
     }
 
-    public static void DrawPile(WorldContainer c, int cx, int cy)
+    public static void DrawPile(List<LootItem> c)
     {
-        int shown = 0;
-        for(int i = 0; i < c.Contents.SlotCount && shown < 3; i++)
+        foreach(LootItem item in c)
         {
-            ItemStack? stack = c.Contents.GetSlot(i);
-            if(stack == null) continue;
-
-            int x = cx - 14 + shown * 10;
-            RL.DrawRectangle(x - 1, cy - 5, 10, 10, Color.Black);
-            RL.DrawRectangle(x, cy - 4, 8, 8, ItemVisuals.GetColor(stack.Type));
-            shown++;
+            int x = item.TileX * TileMap.TileSize;
+            int y = item.TileY * TileMap.TileSize;
+            RL.DrawRectangle(x + 4, y + 4, 8, 8, ItemVisuals.GetColor(item.Type));
         }
+        // int shown = 0;
+        // for(int i = 0; i < c.Contents.SlotCount && shown < 3; i++)
+        // {
+        //     LootItem? stack = c.Contents.GetSlot(i);
+        //     if(stack == null) continue;
+
+        //     int x = cx - 14 + shown * 10;
+        //     RL.DrawRectangle(x - 1, cy - 5, 10, 10, Color.Black);
+        //     RL.DrawRectangle(x, cy - 4, 8, 8, ItemVisuals.GetColor(stack.Type));
+        //     shown++;
+        // }
     }
 }

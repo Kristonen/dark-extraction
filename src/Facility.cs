@@ -46,6 +46,43 @@ public class Facility
         return best;
     }
 
+    public WorldContainer? FindNearestCrate(Vector2 worldPos, float range)
+    {
+        return Containers
+            .Where(c => c.Kind == WorldContainerKind.Crate && DistanceTo(c, worldPos) <= range)
+            .OrderBy(c => DistanceTo(c, worldPos))
+            .FirstOrDefault();
+    }
+
+    public Container FindNearPiles(Vector2 worldPosition, float radius)
+    {
+        List<LootItem> nearestLoot = Loot
+            .Where(l => DistanceTo(l, worldPosition) <= radius)
+            .ToList();
+        if(nearestLoot.Count == 0) return new(8);
+        Container c = new(nearestLoot.Count);
+        foreach(LootItem item in nearestLoot)
+        {
+            c.Add(item);
+        }
+        
+        return c;
+    }
+
+    private static float DistanceTo(WorldContainer c, Vector2 pos)
+    {
+        Vector2 center = new((c.TileX + 0.5f) * TileMap.TileSize,
+                        (c.TileY + 0.5f) * TileMap.TileSize);
+        return Vector2.Distance(pos, center);
+    }
+
+    private static float DistanceTo(LootItem l, Vector2 pos)
+    {
+        Vector2 center = new((l.TileX + 0.5f) * TileMap.TileSize,
+                            (l.TileY + 0.5f) * TileMap.TileSize);
+        return Vector2.Distance(pos, center);
+    }
+
     public Vector2 StartPosition
     {
         get
@@ -75,11 +112,11 @@ public class Facility
         return pile;
     }
 
-    public void RemoveIfEmptyPile(WorldContainer container)
+    public void RemoveIfEmptyPile(Container container)
     {
-        if(container.Kind == WorldContainerKind.Pile && container.Contents.IsEmpty)
-        {
-            Containers.Remove(container);
-        }
+        // if(container.IsEmpty)
+        // {
+        //     Containers.Remove(container);
+        // }
     }
 }

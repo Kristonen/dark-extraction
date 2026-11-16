@@ -19,31 +19,19 @@ public class Game : IDisposable
     // private readonly TileMap _map = new(40, 22);
     private readonly Lighting _lighting = new Lighting(GameSettings.ScreenWidth, GameSettings.ScreenHeight);
     private readonly Hud _hud = new();
-    private readonly WorldContainer emptyContainer;
+    private readonly TransferMenu _menu = new();
 
     public Game()
     {
         _facility = NewFacility();
-        emptyContainer = new(0, 0, WorldContainerKind.Pile, new(20));
-        
+        _player.Inventory.Backpack.Add(ItemType.Cloth, 10, 0, 0);
 
-        var a = new Container(2);
-        a.Add(ItemType.Cloth, 15);
-        var b = new Container(1);
-
-        Console.WriteLine(ItemTransfer.MoveStack(a, 0, b, 10));
-        Console.WriteLine(ItemTransfer.MoveStack(a, 1, b, 5));
-        var c2 = new Container(1, 1.5f);
-        Console.WriteLine(ItemTransfer.MoveStack(a, 1, c2, 5));
-        Console.WriteLine(a.Count(ItemType.Cloth));
-
-        var src = new Container(1); src.Add(ItemType.Cloth, 10);
-        var dst = new Container(1); dst.Add(ItemType.Cloth, 6);
-        Console.WriteLine(ItemTransfer.MoveStack(src, 0, dst, 10));
-        Console.WriteLine(src.Count(ItemType.Cloth));
-
-        int cloth = _player.Inventory.Backpack.Add(ItemType.Cloth, 10);
-        Console.WriteLine($"Cloth: {cloth}");
+        Container c = new(8);
+        int x = (int)(_player.Position.X/TileMap.TileSize);
+        int y = (int)(_player.Position.Y/TileMap.TileSize);
+        c.Add(ItemType.Cloth, 5, x, y);
+        WorldContainer wc = new(x, y, WorldContainerKind.Crate, c);
+        _facility.Containers.Add(wc);
     }
 
     private Facility NewFacility()
@@ -61,7 +49,7 @@ public class Game : IDisposable
 
             int items = 0;
             for (int i = 0; i < c.Contents.SlotCount; i++)
-                items += c.Contents.GetSlot(i)?.Count ?? 0;
+                items += c.Contents.GetSlot(i)?.Amount ?? 0;
 
             perThird[Math.Min(2, (int)(d * 3))] += items;
             totalItems += items;
@@ -74,14 +62,24 @@ public class Game : IDisposable
     public void Update(float dt)
     {
         Vector2 mouseWorld = _camera.ScreenToWorld(RL.GetMousePosition());
+        WorldContainer? crate = _facility.FindNearestCrate(_player.Position, 48f);
+        _hud.Prompt = (!_inventoryOpen && crate != null) ? "[E] - Open crate" : null;
         if(!_inventoryOpen) _player.Update(dt, _facility.Map, mouseWorld);
         Vector2 cameraTarget = _overview
             ? new Vector2(MapWidth * TileMap.TileSize / 2f, MapHeight * TileMap.TileSize / 2f)
             : _player.Position;
         _camera.Follow(cameraTarget, dt);
 
-        if(RL.IsKeyPressed(KeyboardKey.E)) HandleInteract();
-        if(RL.IsKeyPressed(KeyboardKey.Tab)) _inventoryOpen = !_inventoryOpen;
+        if (RL.IsKeyPressed(KeyboardKey.E))
+        {
+            if(_inventoryOpen) CloseMenu();
+            else if(crate != null) OpenMenu(crate.Contents, true);
+        }
+        if (RL.IsKeyPressed(KeyboardKey.Tab))
+        {
+            if(_inventoryOpen) CloseMenu();
+            else OpenMenu(_facility.FindNearPiles(_player.Position, 48f));
+        }
         //DEBUG
         if (RL.IsKeyPressed(KeyboardKey.G))
         {
@@ -106,12 +104,8 @@ public class Game : IDisposable
 
         if (_inventoryOpen)
         {
-            WorldContainer? worldContainer = _facility.FindNearestContainer(_player.Position, 48f);
-            worldContainer = worldContainer == null ? emptyContainer : worldContainer;
-            int tileX = (int)(_player.Position.X / TileMap.TileSize);
-            int tileY = (int)(_player.Position.Y / TileMap.TileSize);
-            TransferMenu.Update(_player.Inventory.Backpack, worldContainer,
-            tileX, tileY, _facility);
+
+            _menu.Update(_player.Inventory.Backpack, _facility);
         }
     }
 
@@ -121,6 +115,7 @@ public class Game : IDisposable
         _facility.Map.Draw();
         if(_showDepth) DepthDebugView.Draw(_facility);
         LootRenderer.Draw(_facility.Containers);
+        LootRenderer.DrawPile(_facility.Loot);
         _player.Draw();
         _camera.End();
 
@@ -129,12 +124,11 @@ public class Game : IDisposable
             _lighting.RenderMask(_player.Flashlight, _camera);
             _lighting.DrawingOverlay();
         }
+        _hud.DrawPrompt();
         _hud.Draw(_player.Flashlight, _player.Inventory);
         if (_inventoryOpen)
         {
-            WorldContainer? worldContainer = _facility.FindNearestContainer(_player.Position, 48f);
-            worldContainer = worldContainer == null ? emptyContainer : worldContainer;
-            TransferMenu.Draw(_player.Inventory.Backpack, worldContainer.Contents, RL.GetMousePosition());
+            _menu.Draw(_player.Inventory.Backpack, RL.GetMousePosition());
         }
         RL.DrawFPS(GameSettings.ScreenWidth - 100, 50);
     }
@@ -144,16 +138,18 @@ public class Game : IDisposable
         _lighting.Dispose();
     }
 
-    private void HandleInteract()
+    private void OpenMenu(Container source, bool isCrate = false)
     {
-        WorldContainer? target = _facility.FindNearestContainer(_player.Position, 48f);
-        if(target == null)
-        {
-            Console.WriteLine("Nothing near");
-            return;
-        }
-        string kind = target.Kind == WorldContainerKind.Pile ? "Pile" : "Crate";
-        DebugPrint(kind, target.Contents);
+        int tileX = (int)(_player.Position.X / TileMap.TileSize);
+        int tileY = (int)(_player.Position.Y / TileMap.TileSize);
+        _menu.Open(source, tileX, tileY, isCrate);
+        _inventoryOpen = true;
+    }
+
+    private void CloseMenu()
+    {
+        _menu.Close();
+        _inventoryOpen = false;
     }
 
     private void DebugTakeAll()
@@ -167,7 +163,7 @@ public class Game : IDisposable
 
         for(int i = 0; i < target.Contents.SlotCount; i++)
         {
-            ItemTransfer.TakeFromWorld(target, i, int.MaxValue, _player.Inventory.Backpack, _facility);
+            //ItemTransfer.TakeFromWorld(target, i, int.MaxValue, _player.Inventory.Backpack, _facility);
         }
         DebugPrint("Backpack", _player.Inventory.Backpack);
     }
@@ -181,8 +177,8 @@ public class Game : IDisposable
             int tileX = (int)(_player.Position.X / TileMap.TileSize);
             int tileY = (int)(_player.Position.Y / TileMap.TileSize);
 
-            int moved = ItemTransfer.DropGround(backpack, i, int.MaxValue, tileX, tileY, _facility);
-            Console.WriteLine($"{moved} being dropped");
+            ItemTransfer.DropGround(backpack, i, tileX, tileY, _facility);
+            // Console.WriteLine($"{moved} being dropped");
             DebugPrint("BackPack", backpack);
             return;
         }
@@ -196,9 +192,9 @@ public class Game : IDisposable
         bool any = false;
         for(int i = 0; i < container.SlotCount; i++)
         {
-            ItemStack? stack = container.GetSlot(i);
+            LootItem? stack = container.GetSlot(i);
             if(stack == null) continue;
-            Console.WriteLine($"    Place {i}: {stack.Count}x {ItemDataBase.Get(stack.Type).Name}");
+            Console.WriteLine($"    Place {i}: {stack.Amount}x {ItemDataBase.Get(stack.Type).Name}");
             any = true;
         }
         if(!any) Console.WriteLine("    (empty)");
