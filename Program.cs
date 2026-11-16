@@ -17,6 +17,7 @@ using(Game game = new())
         RL.ClearBackground(Color.Black);
         game.Draw();
         RL.EndDrawing();
+        if(game.CloseGame) break;
     }
 }
 RL.CloseWindow();

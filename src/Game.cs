@@ -6,6 +6,7 @@ using RL = Raylib_cs.Raylib;
 
 public class Game : IDisposable
 {
+    public bool CloseGame { get; private set; }
     private readonly Player _player = new();
     private readonly GameCamera _camera = new();
     private const int MapWidth = 300;
@@ -16,6 +17,7 @@ public class Game : IDisposable
     private bool _inventoryOpen = false;
     private readonly FacilityGenerator _generator = new(RoomLibary.CreateAll());
     private Facility _facility;
+    private FacilityKind _facilityKind = FacilityKind.Camp;
     // private readonly TileMap _map = new(40, 22);
     private readonly Lighting _lighting = new Lighting(GameSettings.ScreenWidth, GameSettings.ScreenHeight);
     private readonly Hud _hud = new();
@@ -25,6 +27,7 @@ public class Game : IDisposable
     {
         _facility = NewFacility();
         _player.Inventory.Backpack.Add(ItemType.Cloth, 10, 0, 0);
+        _player.Inventory.Backpack.Add(ItemType.Scrap, 10, 0, 0);
 
         Container c = new(8);
         int x = (int)(_player.Position.X/TileMap.TileSize);
@@ -36,6 +39,13 @@ public class Game : IDisposable
 
     private Facility NewFacility()
     {
+        
+        if(_facilityKind == FacilityKind.Camp)
+        {
+            Facility camp = _generator.CreateCamp(MapWidth, MapHeight);
+            _player.Position = camp.StartPosition;
+            return camp;
+        }
         int seed = Random.Shared.Next();
         Facility facility = _generator.Generate(MapWidth, MapHeight, seed);
         _player.Position = facility.StartPosition;
@@ -62,19 +72,32 @@ public class Game : IDisposable
     public void Update(float dt)
     {
         Vector2 mouseWorld = _camera.ScreenToWorld(RL.GetMousePosition());
+
         WorldContainer? crate = _facility.FindNearestCrate(_player.Position, 48f);
-        _hud.Prompt = (!_inventoryOpen && crate != null) ? "[E] - Open crate" : null;
+        _hud.Prompt = null;
+
         if(!_inventoryOpen) _player.Update(dt, _facility.Map, mouseWorld);
+
         Vector2 cameraTarget = _overview
             ? new Vector2(MapWidth * TileMap.TileSize / 2f, MapHeight * TileMap.TileSize / 2f)
             : _player.Position;
         _camera.Follow(cameraTarget, dt);
 
-        if (RL.IsKeyPressed(KeyboardKey.E))
+        if(crate != null && !_inventoryOpen) _hud.Prompt = "[E] - Open Crate";
+        if(_facility.IsAtExtractionPos(_player.Position)) _hud.Prompt = "[E] - Extract";
+        //Open crate
+        if (RL.IsKeyPressed(KeyboardKey.E) && crate != null)
         {
             if(_inventoryOpen) CloseMenu();
-            else if(crate != null) OpenMenu(crate.Contents, true);
+            else OpenMenu(crate.Contents, true);
         }
+        //Extract
+        if(RL.IsKeyPressed(KeyboardKey.E) && _facility.IsAtExtractionPos(_player.Position))
+        {
+            HandleExtraction();
+            // CloseGame = true;
+        }
+        //Open inventory
         if (RL.IsKeyPressed(KeyboardKey.Tab))
         {
             if(_inventoryOpen) CloseMenu();
@@ -104,7 +127,6 @@ public class Game : IDisposable
 
         if (_inventoryOpen)
         {
-
             _menu.Update(_player.Inventory.Backpack, _facility);
         }
     }
@@ -113,6 +135,7 @@ public class Game : IDisposable
     {
         _camera.Begin();
         _facility.Map.Draw();
+        Extraction.Draw(_facility.ExtractionPoint.TileX, _facility.ExtractionPoint.TileY);
         if(_showDepth) DepthDebugView.Draw(_facility);
         LootRenderer.Draw(_facility.Containers);
         LootRenderer.DrawPile(_facility.Loot);
@@ -150,6 +173,20 @@ public class Game : IDisposable
     {
         _menu.Close();
         _inventoryOpen = false;
+    }
+
+    private void HandleExtraction()
+    {
+        if(_facilityKind == FacilityKind.Camp)
+        {
+            _facilityKind = FacilityKind.Storage;
+        }
+        else
+        {
+            _facilityKind = FacilityKind.Camp;
+        }
+        _facility = NewFacility();
+        _camera.SnapTo(_player.Position);
     }
 
     private void DebugTakeAll()

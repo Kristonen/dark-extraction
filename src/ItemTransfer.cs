@@ -55,7 +55,7 @@ public static class ItemTransfer
         crate.RemoveFromSlot(slot, moved);
     }
 
-    public static void TakeFromWorld(Container source, int slot, int amount, Container to, Facility facility)
+    public static void TakeFromWorld(Container source, int slot, Container to, Facility facility)
     {
         LootItem? item = source.GetSlot(slot);
         if(item == null) return;

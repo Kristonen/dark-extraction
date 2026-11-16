@@ -8,7 +8,7 @@ public static class RoomLibary
                 #########
                 #.......#
                 #.......#
-                #.......D
+                #E......D
                 #.......#
                 #.......#
                 #########
@@ -77,5 +77,16 @@ public static class RoomLibary
                 #####
                 """)
         };
+    }
+
+    public static RoomTemplate GetCamp()
+    {
+        return RoomTemplateParser.Parse("camp", """
+            ############
+            #..........#
+            #.........E#
+            #..........#
+            ############
+            """);
     }
 }

@@ -84,7 +84,7 @@ public class TransferMenu
                 }
                 else
                 {
-                    ItemTransfer.TakeFromWorld(_nearItems, _dragged, int.MaxValue, backpack, facility);
+                    ItemTransfer.TakeFromWorld(_nearItems, _dragged, backpack, facility);
                     RefreshContainer(facility);
                 }
             }
@@ -150,7 +150,7 @@ public class TransferMenu
         DrawSingleContainer(panel, backpack, mouseOnInventory);
 
         panel = GetPanel(GameSettings.ScreenWidth/2 + 50);
-        DrawSingleContainer(panel, _nearItems, !mouseOnInventory);
+        if(_nearItems != null) DrawSingleContainer(panel, _nearItems, !mouseOnInventory);
         
         
         if(_dragged == -1) return;
@@ -168,7 +168,8 @@ public class TransferMenu
     {
         RL.DrawRectangleRec(panel, new(30, 30, 30, 230));
         RL.DrawRectangleLinesEx(panel, 2, Color.White);
-        for(int i = 0; i < container.SlotCount; i++)
+        int count = container == _nearItems ? 36 : container.SlotCount;
+        for(int i = 0; i < count; i++)
         {
             Rectangle slotRec = GetSlotRec(i, panel);
             RL.DrawRectangleRec(slotRec, Color.DarkGray);
@@ -181,9 +182,9 @@ public class TransferMenu
             Rectangle itemRec = new(slotRec.X + 8, slotRec.Y + 8, slotRec.Width - 16, slotRec.Height - 16);
             if(_fromContainer == container && i == _dragged) continue;
             RL.DrawRectangleRec(itemRec, ItemVisuals.GetColor(item.Type));
-            string count = $"x{item.Amount}";
-            int width = RL.MeasureText(count, SlotFontSize);
-            RL.DrawText(count, (int)(slotRec.X + slotRec.Width - width - 5), (int)(slotRec.Y + slotRec.Height - 20),
+            string itemCount = $"x{item.Amount}";
+            int width = RL.MeasureText(itemCount, SlotFontSize);
+            RL.DrawText(itemCount, (int)(slotRec.X + slotRec.Width - width - 5), (int)(slotRec.Y + slotRec.Height - 20),
                 SlotFontSize, Color.White);
             
         }

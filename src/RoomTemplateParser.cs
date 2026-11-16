@@ -21,6 +21,7 @@ public static class RoomTemplateParser
         Tile[,] tiles = new Tile[w, h];
         List<Connector> connectors = new();
         List<LootSpot> lootSpots = new();
+        ExtractionPoint extractionPoint = new(-1, -1);
 
         for(int y = 0; y < lines.Length; y++)
         {
@@ -47,12 +48,15 @@ public static class RoomTemplateParser
                         LootSpot lootSpot = new(x, y, kind);
                         lootSpots.Add(lootSpot);
                         break;
+                    case 'E':
+                        extractionPoint = extractionPoint with {TileX = x, TileY = y};
+                        break;
                     default:
                         throw new InvalidDataException($"Room {name}: unkwon character '{lines[x][y]}' at ({x},{y})");
                 }
             }
         }
-        return new(name, w, h, tiles, connectors, lootSpots);
+        return new(name, w, h, tiles, connectors, lootSpots, extractionPoint);
     }
 
     public static Direction GetDoorDirectionInRoom(string roomName, int x, int y, int width, int height)

@@ -6,6 +6,7 @@ public class RoomTemplate
     public Tile[,] Tiles { get; set; }
     public List<Connector> Connectors { get; set; }
     public List<LootSpot> LootSpots { get; }
+    public ExtractionPoint ExtractionPoint { get; }
 
     public RoomTemplate(string name, int width, int height, Tile[,] tiles, List<Connector> connectors, List<LootSpot> lootSpots)
     {
@@ -15,5 +16,17 @@ public class RoomTemplate
         Tiles = tiles;
         Connectors = connectors;
         LootSpots = lootSpots;
+    }
+
+    public RoomTemplate(string name, int width, int height, Tile[,] tiles,
+                        List<Connector> connectors, List<LootSpot> lootSpots, ExtractionPoint point)
+    {
+        Name = name;
+        Width = width;
+        Height = height;
+        Tiles = tiles;
+        Connectors = connectors;
+        LootSpots = lootSpots;
+        ExtractionPoint = point;
     }
 }

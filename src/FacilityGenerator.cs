@@ -27,6 +27,24 @@ public class FacilityGenerator
         return Finish(biggestFacility!, rng);
     }
 
+    public Facility CreateCamp(int width, int height)
+    {
+        TileMap map = new(width, height);
+        RoomTemplate template = RoomLibary.GetCamp();
+        PlacedRoom room = new(template, 50, 50);
+        Stamp(map, template, room.X, room.Y);
+        int eX = template.ExtractionPoint.TileX;
+        int eY = template.ExtractionPoint.TileY;
+        eX += room.X;
+        eY += room.Y;
+        Console.WriteLine($"Extraction: {eX},{eY}");
+        Facility facility = new(map, [room])
+        {
+            ExtractionPoint = new(eX, eY)
+        };
+        return facility;
+    }
+
     private Facility TryGenerate(int width, int height, Random rng)
     {
         TileMap map = new(width, height);
@@ -34,6 +52,10 @@ public class FacilityGenerator
 
         RoomTemplate startTemplate = _templates.First(t => t.Name == "start");
         PlacedRoom start = new(startTemplate, width / 2 - startTemplate.Width / 2, height/2 - startTemplate.Height / 2);
+        int eX = startTemplate.ExtractionPoint.TileX;
+        int eY = startTemplate.ExtractionPoint.TileY;
+        eX += start.X;
+        eY += start.Y;
         Stamp(map, start.Template, start.X, start.Y);
         placed.Add(start);
 
@@ -64,7 +86,10 @@ public class FacilityGenerator
         int loops = ConnectLeftoverDoors(map, leftOverDoors, rng);
         SealDoors(map, leftOverDoors);
         Console.WriteLine($"Rooms: {placed.Count}, Loops: {loops}");
-        return new Facility(map, placed);
+        return new Facility(map, placed)
+        {
+            ExtractionPoint = new(eX, eY)
+        };
     }
 
     private Facility Finish(Facility facility, Random rng)
