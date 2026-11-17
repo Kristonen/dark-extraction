@@ -55,7 +55,8 @@ public static class RoomTemplateParser
                         extractionPoint = extractionPoint with {TileX = x, TileY = y};
                         break;
                     case 'H':
-                        LightSource light = new(6, 100f, 120, x, y);
+                        // LightSource light = new(6, 100f, 120, x, y);
+                        LightSource light = new(x, y, 192f, 0.9f);
                         lightSources.Add(light);
                         break;
                     default:

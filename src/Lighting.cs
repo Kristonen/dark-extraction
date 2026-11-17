@@ -22,8 +22,16 @@ public class Lighting : IDisposable
         RL.ClearBackground(_ambient);
         camera.Begin();
         RL.BeginBlendMode(BlendMode.Additive);
+
+        Vector2 topLeft = camera.ScreenToWorld(Vector2.Zero);
+        Vector2 bottomRight = camera.ScreenToWorld(new Vector2(GameSettings.ScreenWidth, GameSettings.ScreenHeight));
+        Rectangle view = new(topLeft.X, topLeft.Y, bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
+        foreach(LightSource light in lights)
+        {
+            light.DrawIntoMask(view);
+        }
+
         flashlight.DrawIntoMask();
-        foreach(var light in lights) light.DrawIntoMask();
         RL.EndBlendMode();
         camera.End();
         RL.EndTextureMode();

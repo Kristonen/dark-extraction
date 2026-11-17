@@ -33,7 +33,7 @@ public class PlacedRoom
         foreach(LightSource l in Template.LightSources)
         {
             yield return new(
-                6, l.GlowRadius, l.GlowRays, X + l.TileX, Y + l.TileY
+                X + l.TileX, Y + l.TileY, l.Radius, l.Intensity
             );
         }
     }

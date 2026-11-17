@@ -82,11 +82,15 @@ public static class RoomLibary
     public static RoomTemplate GetCamp()
     {
         return RoomTemplateParser.Parse("camp", """
-            ############
-            #H........H#
-            #.........E#
-            #H........H#
-            ############
+            #############
+            #...........#
+            #...........#
+            #...........#
+            #....H.....E#
+            #...........#
+            #...........#
+            #...........#
+            #############
             """);
     }
 }

@@ -4,62 +4,56 @@ using Raylib_cs;
 
 public class LightSource
 {
-    public int MaxLayer { get; }
-    public float GlowRadius { get; }
-    public int GlowRays { get; }
-    public float Range { get; } = 320f;
+    //NEU
+    private float _radius;
+    private int _rayCount;
+    private bool _dirty = true;
+    private float[] _distances = Array.Empty<float>();
     public int TileX { get; }
     public int TileY { get; }
     public Vector2 Position { get; }
-    private readonly float[] _glowDist;
-
-    public LightSource(int maxLayer, float glowRadius, int glowRays, int tileX, int tileY)
+    public float Radius
     {
-        MaxLayer = maxLayer;
-        GlowRadius = glowRadius;
-        GlowRays = glowRays;
+        get => _radius;
+        set { _radius = value; _dirty = true; }
+    }
+    public int RayCount
+    {
+        get => _rayCount;
+        set { _rayCount = Math.Max(8, value); _dirty = true; }
+    }
+
+    public float Intensity { get; set; }
+    public Color Tint { get; set; } = new(255, 245, 220, 255);
+
+    public LightSource(int tileX, int tileY, float radius = 160f, float intensity = 1f, int rayCount = 64)
+    {
         TileX = tileX;
         TileY = tileY;
-        Position = new(tileX * TileMap.TileSize + 16, tileY * TileMap.TileSize + 16);
-        _glowDist = new float[glowRays + 1];
+        Position = new Vector2((tileX + 0.5f) * TileMap.TileSize, (tileY + 0.5f) * TileMap.TileSize);
+
+        Radius = radius;
+        Intensity = intensity;
+        RayCount = rayCount;
     }
 
     public void Update(float dt, TileMap map)
     {
-        float glowStep = 360f / GlowRays;
-        for(int i = 0; i <= GlowRays; i++)
-        {
-            Vector2 dir = DirFromAngle(i * glowStep);
-            _glowDist[i] = map.Raycast(Position, dir, Range);
-        }
+        if(!_dirty) return;
+
+        _distances = new float[_rayCount + 1];
+        LightFan.CastRays(map, Position, _radius, 0f, 360f / _rayCount, _distances);
+        _dirty = false;
     }
 
-    public void DrawIntoMask()
+    public bool IsVisible(Rectangle view)
     {
-        for(int layer = 0; layer < MaxLayer; layer++)
-        {
-            float radius = GlowRadius * (1f - layer / 6f);
-            DrawFan(_glowDist, 0f, 360f / GlowRays, 0, GlowRays, radius, new(255, 245, 220, 20));
-        }
+        return Position.X + _radius >= view.X && Position.X - _radius <= view.X + view.Width
+            && Position.Y + _radius >= view.Y && Position.Y - _radius <= view.Y + view.Height;
     }
-
-    private void DrawFan(float[] dist, float startAngle, float angleStep, int from, int to, float maxLen, Color color)
+    public void DrawIntoMask(Rectangle view)
     {
-        for(int i = from; i < to; i++)
-        {
-            float a0 = startAngle + i * angleStep;
-            float a1 = startAngle + (i + 1) * angleStep;
-
-            Vector2 p0 = Position + DirFromAngle(a0) * MathF.Min(dist[i], maxLen);
-            Vector2 p1 = Position + DirFromAngle(a1) * MathF.Min(dist[i + 1], maxLen);
-
-            RL.DrawTriangle(Position, p1, p0, color);
-        }
-    }
-
-    private Vector2 DirFromAngle(float angleDeg)
-    {
-        float rad = angleDeg * (MathF.PI / 180f);
-        return new(MathF.Cos(rad), MathF.Sin(rad));
+        if(_distances.Length == 0 || !IsVisible(view)) return;
+        LightFan.DrawGradient(Position, _distances, 0f, 360f / _rayCount, _radius, Intensity, Tint);
     }
 }
