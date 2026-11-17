@@ -39,14 +39,14 @@ public class Game : IDisposable
 
     private Facility NewFacility()
     {
-        
+        int seed = Random.Shared.Next();
         if(_facilityKind == FacilityKind.Camp)
         {
-            Facility camp = _generator.CreateCamp(MapWidth, MapHeight);
+            Facility camp = _generator.CreateCamp(MapWidth, MapHeight, seed);
             _player.Position = camp.StartPosition;
             return camp;
         }
-        int seed = Random.Shared.Next();
+        
         Facility facility = _generator.Generate(MapWidth, MapHeight, seed);
         _player.Position = facility.StartPosition;
         _camera.SnapTo(facility.StartPosition);
@@ -77,6 +77,7 @@ public class Game : IDisposable
         _hud.Prompt = null;
 
         if(!_inventoryOpen) _player.Update(dt, _facility.Map, mouseWorld);
+        foreach(var l in _facility.LightSources) l.Update(dt, _facility.Map);
 
         Vector2 cameraTarget = _overview
             ? new Vector2(MapWidth * TileMap.TileSize / 2f, MapHeight * TileMap.TileSize / 2f)
@@ -122,9 +123,6 @@ public class Game : IDisposable
             _showDepth = !_showDepth;
         }
 
-        if(RL.IsKeyPressed(KeyboardKey.T)) DebugTakeAll();
-        if(RL.IsKeyPressed(KeyboardKey.Q)) DebugDropFirst();
-
         if (_inventoryOpen)
         {
             _menu.Update(_player.Inventory.Backpack, _facility);
@@ -139,12 +137,13 @@ public class Game : IDisposable
         if(_showDepth) DepthDebugView.Draw(_facility);
         LootRenderer.Draw(_facility.Containers);
         LootRenderer.DrawPile(_facility.Loot);
+        LightRenderer.Draw(_facility.LightSources);
         _player.Draw();
         _camera.End();
 
         if (_darknessEnabled)
         {
-            _lighting.RenderMask(_player.Flashlight, _camera);
+            _lighting.RenderMask(_player.Flashlight, _facility.LightSources, _camera);
             _lighting.DrawingOverlay();
         }
         _hud.DrawPrompt();
@@ -187,53 +186,5 @@ public class Game : IDisposable
         }
         _facility = NewFacility();
         _camera.SnapTo(_player.Position);
-    }
-
-    private void DebugTakeAll()
-    {
-        WorldContainer? target = _facility.FindNearestContainer(_player.Position, 48f);
-        if(target == null)
-        {
-            Console.WriteLine("Nothing in the near");
-            return;
-        }
-
-        for(int i = 0; i < target.Contents.SlotCount; i++)
-        {
-            //ItemTransfer.TakeFromWorld(target, i, int.MaxValue, _player.Inventory.Backpack, _facility);
-        }
-        DebugPrint("Backpack", _player.Inventory.Backpack);
-    }
-
-    private void DebugDropFirst()
-    {
-        Container backpack = _player.Inventory.Backpack;
-        for(int i = 0; i < backpack.SlotCount; i++)
-        {
-            if(backpack.GetSlot(i) == null) continue;
-            int tileX = (int)(_player.Position.X / TileMap.TileSize);
-            int tileY = (int)(_player.Position.Y / TileMap.TileSize);
-
-            ItemTransfer.DropGround(backpack, i, tileX, tileY, _facility);
-            // Console.WriteLine($"{moved} being dropped");
-            DebugPrint("BackPack", backpack);
-            return;
-        }
-        Console.WriteLine("Backpack is empty");
-    }
-
-    private void DebugPrint(string title, Container container)
-    {
-        Console.WriteLine($"--- {title} ---");
-
-        bool any = false;
-        for(int i = 0; i < container.SlotCount; i++)
-        {
-            LootItem? stack = container.GetSlot(i);
-            if(stack == null) continue;
-            Console.WriteLine($"    Place {i}: {stack.Amount}x {ItemDataBase.Get(stack.Type).Name}");
-            any = true;
-        }
-        if(!any) Console.WriteLine("    (empty)");
     }
 }

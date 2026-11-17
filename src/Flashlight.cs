@@ -18,23 +18,19 @@ public class Flashlight
     public bool CanInsertBattery => Charge < 1f;
     private float PowerFactor => MathF.Min(1f, Charge / 0.25f);
     private float CurrentRange => Range * (0.4f + 0.6f * PowerFactor);
-
-    public void Toggle() => IsOn = !IsOn;
-    public void InsertBattery() => Charge = 1f;
-
     private const int ConeRays = 100;
     private readonly float[] _coneDist = new float[ConeRays];
     private const int GlowRays = 120;
     private const float GlowRadius = 50f;
     private readonly float[] _glowDist = new float[GlowRays + 1];
+    public void Toggle() => IsOn = !IsOn;
+    public void InsertBattery() => Charge = 1f;
 
     public void Update(float dt, Vector2 playerPos, Vector2 aimTarget, TileMap map)
     {
         if(IsLit) Charge = MathF.Max(0f, Charge - dt / BaterryLifeSeconds);
 
         Position = playerPos;
-        // Vector2 toMouse = RL.GetMousePosition() - Position;
-        // AngleDeg = MathF.Atan2(toMouse.Y, toMouse.X) * (180f/MathF.PI);
 
         Vector2 toTarget = aimTarget - Position;
         AngleDeg = MathF.Atan2(toTarget.Y, toTarget.X) * (180f/MathF.PI);

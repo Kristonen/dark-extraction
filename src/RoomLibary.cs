@@ -83,9 +83,9 @@ public static class RoomLibary
     {
         return RoomTemplateParser.Parse("camp", """
             ############
-            #..........#
+            #H........H#
             #.........E#
-            #..........#
+            #H........H#
             ############
             """);
     }

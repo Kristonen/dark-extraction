@@ -27,4 +27,14 @@ public class PlacedRoom
             yield return new(X + loot.X, Y + loot.Y, loot.Kind);
         }
     }
+    
+    public IEnumerable<LightSource> GetMapLightSources()
+    {
+        foreach(LightSource l in Template.LightSources)
+        {
+            yield return new(
+                6, l.GlowRadius, l.GlowRays, X + l.TileX, Y + l.TileY
+            );
+        }
+    }
 }

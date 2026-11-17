@@ -16,13 +16,14 @@ public class Lighting : IDisposable
         _mask = RL.LoadRenderTexture(width, height);
     }
 
-    public void RenderMask(Flashlight flashlight, GameCamera camera)
+    public void RenderMask(Flashlight flashlight, List<LightSource> lights, GameCamera camera)
     {
         RL.BeginTextureMode(_mask);
         RL.ClearBackground(_ambient);
         camera.Begin();
         RL.BeginBlendMode(BlendMode.Additive);
         flashlight.DrawIntoMask();
+        foreach(var light in lights) light.DrawIntoMask();
         RL.EndBlendMode();
         camera.End();
         RL.EndTextureMode();

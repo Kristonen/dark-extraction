@@ -27,8 +27,9 @@ public class FacilityGenerator
         return Finish(biggestFacility!, rng);
     }
 
-    public Facility CreateCamp(int width, int height)
+    public Facility CreateCamp(int width, int height, int seed)
     {
+        Random rng = new(seed);
         TileMap map = new(width, height);
         RoomTemplate template = RoomLibary.GetCamp();
         PlacedRoom room = new(template, 50, 50);
@@ -42,7 +43,7 @@ public class FacilityGenerator
         {
             ExtractionPoint = new(eX, eY)
         };
-        return facility;
+        return Finish(facility, rng);
     }
 
     private Facility TryGenerate(int width, int height, Random rng)
@@ -95,6 +96,7 @@ public class FacilityGenerator
     private Facility Finish(Facility facility, Random rng)
     {
         LootPlacer.Place(facility, rng);
+        LightPlacer.Place(facility);
         return facility;
     }
     private void SealDoors(TileMap map, List<Connector> doors)

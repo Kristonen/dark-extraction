@@ -6,7 +6,6 @@ public static class LootPlacer
     {
         for (int i = 1; i < facility.Rooms.Count; i++)
         {
-            Room bounds = facility.Rooms[i].Bounds;
             foreach(LootSpot spot in facility.Rooms[i].GetMapLootSpots())
             {
                 if(rng.NextDouble() > SpotChance) continue;

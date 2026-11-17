@@ -11,6 +11,7 @@ public class Facility
     public DepthMap Depth { get; }
     public List<LootItem> Loot { get; } = [];
     public List<WorldContainer> Containers { get; } = [];
+    public List<LightSource> LightSources { get; } = [];
     public ExtractionPoint ExtractionPoint { get; set; }
 
     public (int x, int y) StartTile
@@ -38,28 +39,6 @@ public class Facility
             return true;
         }
         return false;
-    }
-
-    //Only takes the next one, but for the future take every one in range
-    public WorldContainer? FindNearestContainer(Vector2 worldPos, float range)
-    {
-        WorldContainer? best = null;
-        float bestDistance = range;
-
-        foreach(WorldContainer c in Containers)
-        {
-            var pos = new Vector2(
-                (c.TileX + 0.5f) * TileMap.TileSize,
-                (c.TileY + 0.5f) * TileMap.TileSize);
-            
-            float d = Vector2.Distance(worldPos, pos);
-            if(d <= bestDistance)
-            {
-                best = c;
-                bestDistance = d;
-            }
-        }
-        return best;
     }
 
     public WorldContainer? FindNearestCrate(Vector2 worldPos, float range)
@@ -114,30 +93,5 @@ public class Facility
                 (start.CenterY + 0.5f) * TileMap.TileSize
             );
         }
-    }
-
-    public WorldContainer GetOrCreatePile(int tileX, int tileY)
-    {
-        foreach(WorldContainer wc in Containers)
-        {
-            if(wc.Kind == WorldContainerKind.Pile && wc.TileX == tileX && wc.TileY == tileY)
-            {
-                return wc;
-            }
-        }
-
-        var pile = new WorldContainer(tileX, tileY, WorldContainerKind.Pile,
-            new Container(WorldContainer.PileSlots));
-
-        Containers.Add(pile);
-        return pile;
-    }
-
-    public void RemoveIfEmptyPile(Container container)
-    {
-        // if(container.IsEmpty)
-        // {
-        //     Containers.Remove(container);
-        // }
     }
 }

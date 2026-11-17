@@ -1,3 +1,5 @@
+using System.Net.WebSockets;
+
 public static class RoomTemplateParser
 {
     public static RoomTemplate Parse(string name, string text)
@@ -19,8 +21,9 @@ public static class RoomTemplateParser
         }
 
         Tile[,] tiles = new Tile[w, h];
-        List<Connector> connectors = new();
-        List<LootSpot> lootSpots = new();
+        List<Connector> connectors = [];
+        List<LootSpot> lootSpots = [];
+        List<LightSource> lightSources = [];
         ExtractionPoint extractionPoint = new(-1, -1);
 
         for(int y = 0; y < lines.Length; y++)
@@ -51,12 +54,23 @@ public static class RoomTemplateParser
                     case 'E':
                         extractionPoint = extractionPoint with {TileX = x, TileY = y};
                         break;
+                    case 'H':
+                        LightSource light = new(6, 100f, 120, x, y);
+                        lightSources.Add(light);
+                        break;
                     default:
                         throw new InvalidDataException($"Room {name}: unkwon character '{lines[x][y]}' at ({x},{y})");
                 }
             }
         }
-        return new(name, w, h, tiles, connectors, lootSpots, extractionPoint);
+        return new RoomTemplateBuilder(name, w, h)
+                .AddTiles(tiles)
+                .AddConnector(connectors)
+                .AddLootSpot(lootSpots)
+                .AddLightSource(lightSources)
+                .AddExtractionPoint(extractionPoint)
+                .Build();
+        // return new(name, w, h, tiles, connectors, lootSpots, extractionPoint);
     }
 
     public static Direction GetDoorDirectionInRoom(string roomName, int x, int y, int width, int height)
